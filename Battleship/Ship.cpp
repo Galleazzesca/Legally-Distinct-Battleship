@@ -158,7 +158,7 @@ std::pair<Ships, char> CreateShip(const std::string Ship)
 // ----------------------------------------------- Placement Functions -----------------------------------------------
 Ships ManualPlacement(char Board[Rank][File], Ships TempShip, char N, const std::string Ship)
 {
-	std::cout << "Where should the " << Ship << " be placed?\n";
+	std::cout << "Where should the " << Ship << " (" << TempShip.Length << " points)" << " be placed?\n";
 	std::cout << "Point 1:\n";
 	while (true)
 	{
