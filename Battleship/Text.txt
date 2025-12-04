@@ -1,0 +1,625 @@
+#include "Board.h"
+#include "General.h"
+#include <iostream>
+
+// -------------------------------------------------- Board Set-Up ---------------------------------------------------
+char BoardAlpha[Rank][File];
+char BoardBeta[Rank][File];
+
+char TrackerAlpha[Rank][File];
+char TrackerBeta[Rank][File];
+
+// ------------------------------------------------- Board Functions -------------------------------------------------
+void SetBoard(char Board[Rank][File])
+{
+	for (int i = 0; i < Rank; i++)
+	{
+		for (int j = 0; j < File; j++)
+		{
+			Board[i][j] = ' ';
+		}
+	}
+}
+void PrintBoard(char Board[Rank][File])
+{
+	// Print column headers (A-J)
+	std::cout << "  "; // top-left corner padding
+	for (int j = 0; j < File; j++)
+	{
+		char colHeader = 'A' + j;
+		std::cout << colHeader << " ";
+	}
+	std::cout << "\n";
+
+	for (int i = 0; i < Rank; i++)
+	{
+		// Print row header (1-10)
+		std::cout << i + 1;
+		if (i + 1 < 10) std::cout << " "; // align single-digit numbers
+
+		for (int j = 0; j < File; j++)
+		{
+			std::cout << Board[i][j] << "|";
+		}
+		std::cout << "\n";
+
+		if (i < Rank - 1)
+		{
+			// separator row
+			std::cout << "  "; // padding under row header
+			for (int f = 0; f < File; f++)
+			{
+				std::cout << "- ";
+			}
+			std::cout << "\n";
+		}
+	}
+}
+
+// ------------------------------------------------- Input Functions -------------------------------------------------
+bool IsValidCoordinate(char Board[Rank][File], int rank, int file)
+{
+	if (rank < 0 || rank >= Rank || file < 0 || file >= File)
+	{
+		return false;
+	}
+	if (Board[rank][file] != ' ')
+	{
+		return false;
+	}
+	return true;
+}
+int LetterConverter()
+{
+	char Letter = Util::ValidateChar("X (A-J): ", "ABCDEFGHIJabcdefghij");
+	Letter = toupper(Letter);
+	return Letter - 'A';
+}
+
+#pragma once
+#include "General.h"
+#include <iostream>
+#include <string>
+#include <algorithm>
+#include <sstream>
+
+namespace Util
+{
+    // ----------------------------------------------- Interface Functions -----------------------------------------------
+    void Clear()
+    {
+#ifdef _WIN32
+        system("cls"); // Windows
+#else
+        std::cout << "\033[2J\033[1;1H"; // Linux/macOS (\033[2J is a screen clear while \033[1;1H moves the cursor back to the top-left)
+#endif
+    }
+    void Pause()
+    {
+        std::cout << "Press enter to continue.\n";
+        std::cin.clear();
+        if (std::cin.rdbuf()->in_avail() > 0)
+        {
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+        std::cin.get(); // Only proceeds when enter is inputted
+    }
+    void Clean()
+    {
+        Pause();
+        Clear();
+    }
+
+    // ----------------------------------------------- Validation Functions ----------------------------------------------
+    char ValidateChar(const std::string& Prompt = "", const std::string& AllowedChars = "")
+    {
+        std::string InputLine;
+
+        while (true)
+        {
+            if (!Prompt.empty())
+            {
+                std::cout << Prompt;
+            }
+
+            std::getline(std::cin, InputLine);
+
+            if (InputLine.length() == 1)
+            {
+                std::transform(InputLine.begin(), InputLine.end(), InputLine.begin(), ::tolower);
+
+                char val = InputLine[0];
+
+                if (!AllowedChars.empty() && AllowedChars.find(val) == std::string::npos)
+                {
+                    std::cout << "Invalid input. The allowed characters are " << AllowedChars << "\n";
+                    continue;
+                }
+                return val;
+            }
+
+            else
+            {
+                std::cout << "Invalid Input. Please input a single character.\n";
+            }
+        }
+    }
+    int ValidateInt(const std::string& Prompt = "", char Sign = 0)
+    {
+        std::string InputLine;
+
+        while (true)
+        {
+            if (!Prompt.empty())
+            {
+                std::cout << Prompt;
+            }
+
+            std::getline(std::cin, InputLine);
+
+            std::stringstream ss(InputLine);
+            int val;
+
+            if (ss >> val && ss.eof()) // eof checks if there are no more leftover characters
+            {
+                if (Sign == '-' && val >= 0)
+                {
+                    std::cout << "Invalid Input. Please input a negative integer.\n";
+                    continue;
+                }
+
+                if (Sign == '+' && val <= 0)
+                {
+                    std::cout << "Invalid Input. Please input a positive integer.\n";
+                    continue;
+                }
+
+                return val;
+            }
+
+            else
+            {
+                std::cout << "Invalid Input. Please input an integer.\n";
+            }
+        }
+    }
+    std::string ValidateString(const std::string& Prompt = "",
+        const std::string& AllowedChars = "",
+        size_t MinLength = 1,
+        size_t MaxLength = 100,
+        bool CaseSensitive = true,
+        bool Trimming = true)
+    {
+        if (MinLength > MaxLength)
+        {
+            std::swap(MinLength, MaxLength);
+        }
+
+        std::string InputLine;
+
+        while (true)
+        {
+            if (!Prompt.empty())
+            {
+                std::cout << Prompt;
+
+                if (!Trimming)
+                {
+                    std::cout << "Keep in mind that both leading and trailing spaces will be included.";
+                }
+            }
+
+            std::getline(std::cin, InputLine);
+
+            if (Trimming)
+            {
+                size_t first = InputLine.find_first_not_of(" \t\n\r");
+                size_t last = InputLine.find_last_not_of(" \t\n\r");
+
+                if (first == std::string::npos)
+                {
+                    InputLine.clear();
+                }
+
+                else
+                {
+                    InputLine.erase(last + 1);   // remove everything after the last good character
+                    InputLine.erase(0, first);   // remove everything before the first good character
+                }
+            }
+
+            if (InputLine.length() < MinLength)
+            {
+                std::cout << "Invalid input. Please ensure that your input is at least " << MinLength << " characters long.\n"
+                    << "Your input is currently " << InputLine.length() << " characters long.\n"
+                    << "You must add " << MinLength - InputLine.length() << " characters.\n";
+                continue;
+            }
+
+            if (InputLine.length() > MaxLength)
+            {
+                std::cout << "Invalid input. Please ensure that your input does not exceed " << MaxLength << " characters.\n"
+                    << "Your input is currently " << InputLine.length() << " characters long.\n"
+                    << "You must remove " << InputLine.length() - MaxLength << " characters.\n";
+                continue;
+            }
+
+            if (!AllowedChars.empty())
+            {
+                bool invalidChar = false;
+                for (char c : InputLine)
+                {
+                    char checkChar = c;
+                    if (!CaseSensitive)
+                    {
+                        checkChar = std::tolower(static_cast<unsigned char>(c));
+                    }
+                    if (AllowedChars.find(checkChar) == std::string::npos)
+                    {
+                        invalidChar = true;
+                        std::cout << "Invalid input. '" << c << "' is not an allowed character.\n"
+                            << "The allowed characters are " << AllowedChars << ".\n";
+                        break;
+                    }
+                }
+                if (invalidChar)
+                {
+                    continue; // go back to the start of the while loop
+                }
+            }
+
+            return InputLine;
+        }
+    }
+
+    // ------------------------------------------------- Misc Functions --------------------------------------------------
+    bool ProgramRestart()
+    {
+        Pause();
+        Clear();
+
+        char Input = Util::ValidateChar("Would you like to run the program again?\n1. Yes\n2. No\n", "12");
+
+        if (Input == '1')
+        {
+            Clear();
+            return true;
+        }
+
+        else
+        {
+            return false;
+        }
+    }
+}
+
+#include "General.h"
+#include "Board.h"
+#include "Ship.h"
+#include <iostream>
+#include <cmath>
+
+// ------------------------------------------------ Factory Functions ------------------------------------------------
+Ships SetDestroyer()
+{
+	Ships TempDestroyer;
+
+	TempDestroyer.Type = "Destroyer";
+
+	TempDestroyer.Length = 2;
+
+	TempDestroyer.Hits = 0;
+
+	TempDestroyer.FileLocation.push_back(0);
+	TempDestroyer.RankLocation.push_back(0);
+
+	TempDestroyer.FileLocation.push_back(0);
+	TempDestroyer.RankLocation.push_back(1);
+
+	TempDestroyer.Status = '0'; // Intact
+	return TempDestroyer;
+}
+
+std::pair<Ships, char> CreateShip(const std::string Ship)
+{
+	Ships TempShip;
+	char N;
+
+	if (Ship == "Destroyer")
+	{
+		TempShip = SetDestroyer();
+		N = '1';
+	}
+	else if (Ship == "Submarine")
+	{
+		TempShip = SetSubmarine();
+		N = '2';
+	}
+	else if (Ship == "Cruiser")
+	{
+		TempShip = SetCruiser();
+		N = '3';
+	}
+	else if (Ship == "Battleship")
+	{
+		TempShip = SetBattleship();
+		N = '4';
+	}
+	else
+	{
+		TempShip = SetCarrier();
+		N = '5';
+	}
+
+	return { TempShip, N };
+}
+
+// ----------------------------------------------- Placement Functions -----------------------------------------------
+Ships ManualPlacement(char Board[Rank][File], Ships TempShip, char N, const std::string Ship)
+{
+	std::cout << "Where should the " << Ship << " be placed?\n";
+	std::cout << "Point 1:\n";
+	while (true)
+	{
+		int tmpFile = LetterConverter();
+		int tmpRank = Util::ValidateInt("Y (1-10): ", '+') - 1;
+
+		if (!IsValidCoordinate(Board, tmpRank, tmpFile))
+		{
+			std::cout << "Invalid coordinate or space occupied. Try again.\n";
+			continue;
+		}
+
+		TempShip.FileLocation[0] = tmpFile;
+		TempShip.RankLocation[0] = tmpRank;
+		break;
+	}
+
+	Util::Clear();
+	Board[TempShip.RankLocation[0]][TempShip.FileLocation[0]] = N;
+	PrintBoard(Board);
+	char Orientation = 'N';
+	char End = 'N';
+	int Head = 0;
+
+	for (int i = 1; i < TempShip.Length; i++)
+	{
+		std::cout << "Where should the " << Ship << " be placed?\n";
+		std::cout << "Point " << i + 1 << ":\n";
+
+		int tmpFile, tmpRank;
+		while (true)
+		{
+			// Read both coordinates for the point
+			tmpFile = LetterConverter();
+			tmpRank = Util::ValidateInt("Y (1-10): ", '+') - 1;
+
+			if (!IsValidCoordinate(Board, tmpRank, tmpFile))
+			{
+				std::cout << "Invalid coordinate or space occupied. Try again.\n";
+				continue;
+			}
+
+			int HeadFile = TempShip.FileLocation[Head];
+			int HeadRank = TempShip.RankLocation[Head];
+
+			int TailFile = TempShip.FileLocation[i - 1];
+			int TailRank = TempShip.RankLocation[i - 1];
+
+			if (std::abs(tmpRank - TailRank) == 1 || std::abs(tmpFile - TailFile) == 1)
+			{
+				End = 'T';
+			}
+
+			else if (std::abs(tmpRank - HeadRank) == 1 || std::abs(tmpFile - HeadFile) == 1)
+			{
+				End = 'H';
+				Head = i - 1;
+			}
+
+			if (i == 1)
+			{
+				// First step: must be adjacent and either same file (vertical) or same rank (horizontal)
+				if (tmpFile == TailFile && std::abs(tmpRank - TailRank) == 1)
+				{
+					Orientation = 'V';
+					std::cout << "Orientation set to Vertical.\n";
+					break;
+				}
+				else if (tmpRank == TailRank && std::abs(tmpFile - TailFile) == 1)
+				{
+					Orientation = 'H';
+					std::cout << "Orientation set to Horizontal.\n";
+					break;
+				}
+				else
+				{
+					std::cout << "Invalid placement. Must be adjacent and not diagonal. Try again.\n";
+					continue;
+				}
+			}
+			else
+			{
+				// Subsequent points: must follow chosen orientation and be adjacent to previous
+				if (Orientation == 'V')
+				{
+					if (tmpFile != TailFile || End == 'T' && std::abs(tmpRank - TailRank) != 1 || End == 'H' && std::abs(tmpRank - HeadRank) != 1)
+					{
+						std::cout << "Invalid placement. Must continue vertically adjacent. Try again.\n";
+						continue;
+					}
+					else
+					{
+						break;
+					}
+				}
+				else // Orientation == 'H'
+				{
+					if (tmpRank != TailRank || End == 'T' && std::abs(tmpFile - TailFile) != 1 || End == 'H' && std::abs(tmpFile - HeadFile) != 1)
+					{
+						std::cout << "Invalid placement. Must continue horizontally adjacent. Try again.\n";
+						continue;
+					}
+					else
+					{
+						break;
+					}
+				}
+			}
+		} // end while reading point
+
+		// Accept the validated point
+		TempShip.FileLocation[i] = tmpFile;
+		TempShip.RankLocation[i] = tmpRank;
+
+		Util::Clear();
+		Board[TempShip.RankLocation[i]][TempShip.FileLocation[i]] = N;
+		PrintBoard(Board);
+	}
+	return TempShip;
+}
+Ships PlaceShip(char Board[Rank][File], const std::string Ship)
+{
+	auto [TempShip, N] = CreateShip(Ship);
+
+	TempShip = ManualPlacement(Board, TempShip, N, Ship);
+
+	return TempShip;
+}
+void SetupFleet(char Board[Rank][File], Player &Number)
+{
+	std::cout << Number.Name << " ensure that the other player is looking away.\n";
+	Util::Clean();
+
+	std::cout << Number.Name << " you may now place your ships.\n";
+
+	// -------------------------------------------------- Board Set-Up ---------------------------------------------------
+	SetBoard(Board);
+	PrintBoard(Board);
+
+	// ------------------------------------------------- Ship Placement -------------------------------------------------
+	Number.Fleet.push_back(PlaceShip(Board, "Destroyer"));
+	Number.Fleet.push_back(PlaceShip(Board, "Submarine"));
+	Number.Fleet.push_back(PlaceShip(Board, "Cruiser"));
+	Number.Fleet.push_back(PlaceShip(Board, "Battleship"));
+	Number.Fleet.push_back(PlaceShip(Board, "Carrier"));
+	Util::Clean();
+}
+
+// ----------------------------------------------- Shooting Functions ------------------------------------------------
+void ProcessBombardment(Player& Opponent, char Board[Rank][File], char Tracker[Rank][File], int Row, int Col)
+{
+	for (auto& ship : Opponent.Fleet)
+	{
+		for (int i = 0; i < ship.Length; i++)
+		{
+			if (ship.RankLocation[i] == Row && ship.FileLocation[i] == Col)
+			{
+				ship.Hits++;
+				std::cout << "Its a hit!\n";
+				Tracker[Row][Col] = 'X';
+
+				if (ship.Hits == ship.Length)
+				{
+					std::cout << "You sunk " << Opponent.Name << "'s " << ship.Type << "!\n";
+				}
+				return;
+			}
+		}
+	}
+	std::cout << "You missed!\n";
+	Tracker[Row][Col] = 'O';
+	return;
+}
+void OrderBombardment(Player& Opponent, char Board[Rank][File], char Tracker[Rank][File])
+{
+	std::cout << "Where do you think " << Opponent.Name << "'s ship is?\n";
+	PrintBoard(Tracker);
+	while (true)
+	{
+		int tmpFile = LetterConverter();
+		int tmpRank = Util::ValidateInt("Y (1-10): ", '+') - 1;
+
+		if (tmpRank < 0 || tmpRank >= Rank || tmpFile < 0 || tmpFile >= File)
+		{
+			continue;
+		}
+
+		else
+		{
+			Util::Clean();
+			ProcessBombardment(Opponent, Board, Tracker, tmpRank, tmpFile);
+			PrintBoard(Tracker);
+			Util::Clean;
+			return;
+		}
+	}
+}
+
+// ------------------------------------------- Dovie'andi se tovya sagain --------------------------------------------
+bool DovieAndi(const Player& Navy)
+{
+	for (const auto& ship : Navy.Fleet)
+	{
+		if (ship.Hits < ship.Length)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+#include <iostream>
+#include "General.h"
+#include "Board.h"
+#include "Ship.h"
+
+int main()
+{
+    while (true)
+    {
+        // -------------------------------------------------- Introduction ---------------------------------------------------
+        std::cout << "Welcome to Shipbattles! A game totally distinct from Battleship, and most definitly not a rip-off.\n";
+        Util::Clean();
+
+        // ----------------------------------------------------- Set-up ------------------------------------------------------
+        Player Alpha;
+        Player Beta;
+
+        Alpha.Name = Util::ValidateString("What is your name Player 1?\n", "", 1, 20, false, true);
+        Beta.Name = Util::ValidateString("What about your name Player 2?\n", "", 1, 20, false, true);
+        Util::Clean();
+
+        SetupFleet(BoardAlpha, Alpha);
+        SetupFleet(BoardBeta, Beta);
+
+        // ---------------------------------------------------- Gameplay -----------------------------------------------------
+        SetBoard(TrackerAlpha);
+        SetBoard(TrackerBeta);
+
+        while (true)
+        {
+            OrderBombardment(Beta, BoardBeta, TrackerAlpha);
+            if (DovieAndi(Beta))
+            {
+                std::cout << "Congratulations " << Alpha.Name << "! You won legally distinct Battleship!";
+                break;
+            }
+            Util::Clean();
+
+            OrderBombardment(Alpha, BoardAlpha, TrackerBeta);
+            if (DovieAndi(Alpha))
+            {
+                std::cout << "Congratulations " << Beta.Name << "! You won legally distinct Battleship!";
+                break;
+            }
+            Util::Clean();
+        }
+
+        if (!Util::ProgramRestart())
+        {
+            break;
+        }
+    }
+    return 0;
+}

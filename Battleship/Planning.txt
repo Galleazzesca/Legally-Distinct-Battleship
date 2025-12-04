@@ -1,0 +1,19 @@
+Phase 1 - Planning & Structure
+1. It will follow a standard Battleship structure with a 10x10 grid, 2 players, and 5 ships. The rules will be identical to normal battleship.
+	- Each player will have a single board, they cannot see their ships after they place them.
+	- Ships cannot rotate.
+2. For the board I will be utilizing a simple 2D array of characters. 
+	- E will represent blank spaces
+	- The ships will be represented by the number of spaces they take up.
+		- Maybe a struct for these?
+	- X will represent hits
+		- Will bw tracked by the board.
+	- O will represent misses
+		- Will bw tracked by the board.
+3. I will have a main.cpp file where the actual program runs, a header file for my generic functions, one for board related functions (Displaying the board), and one for ship related functions (hit and miss fall under this category).
+4. The program will first ask the user how many people are playing.
+	- It will then ask each player to choose where there ships will be located, it will be cleared before the next person sees.
+	- The ship locations will be stored internally, neither player will see them after they are inputted.
+	- It will then go through a loop of asking each player to select a target (they will be chosen in the classic manner i.e. A1 or F9).
+	- Once it finishes it will indicate who won.
+
